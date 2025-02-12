@@ -74,6 +74,8 @@ app.post('/webhook', async (req, res) => {
         req.body?.entry[0]?.changes[0]?.value?.metadata?.phone_number_id
       user_id = req.body?.entry[0]?.changes[0]?.value?.messages[0]?.from // extract the phone number from the webhook payload
 
+      let message_id = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id;
+      console.log("Message ID:", message_id);
       // check wheter delay is active or not
       const delayActive = await rateLimiter.receiveMessageDelay(user_id);
       if (delayActive) {
