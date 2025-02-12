@@ -90,15 +90,38 @@ app.post('/webhook', async (req, res) => {
         if(req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text?.body?.startsWith("/restart")){
           deleteUserState(user_id);
           return res.status(200).json({ message: 'ok, we start again' });
-        }
-        const textBody = req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text?.body;
-        await interact_text(
-              user_id,
-              { type: "text", payload: textBody },
-              phone_number_id,
-              user_name
+        } else {
+          let tracker_response = await axios({
+            method: 'POST',
+            url: `${AYO_TRACKER_URL}/v2`,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            data: {
+              user_id: user_id,
+            },
+          });
+          console.log('Tracker response:', tracker_response.data.message);
+          if (tracker_response.data.message === 'no user entry') {
+            const textBody = req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text?.body;
+            await interact(
+                user_id,
+                {type: "text", payload: textBody},
+                phone_number_id,
+                user_name
             )
-
+          } else {
+            const textBody = req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text?.body;
+            await interact_text(
+                user_id,
+                {type: "text", payload: textBody},
+                phone_number_id,
+                user_name
+            )
+          }
+          ;
+        }
         // Old code from Voiceflow
         // await interact_text(
         //   user_id,
