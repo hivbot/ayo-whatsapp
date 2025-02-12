@@ -19,7 +19,6 @@ class WhatsAppRateLimiter {
         let currentIndex = startIndex;
         const anonymizedPhoneNumber = phoneNumber.replace(/\d(?=\d{2})/g, '*');
         while (currentIndex < messages.length) {
-            const message = messages[currentIndex];
             const now = Date.now();
             const lastSentTime = this.lastSentTimes.get(phoneNumber) || 0;
             const backoffDelay = this.backoffDelays.get(phoneNumber) || 0;
@@ -30,18 +29,18 @@ class WhatsAppRateLimiter {
                 await this.sleep(waitTime);
             }
 
-            const {data, ignore} = this.createMessageData(message, phoneNumber);
+            const {data, ignore} = this.createMessageData(messages, phoneNumber,currentIndex);
             if (!ignore) {
                 try {
                     // Attempt to send the message
                     await this.makeHttpRequest(phoneNumberID, data);
-                    console.log(`Message sent to ${anonymizedPhoneNumber} message type: "${message.type}"`);
+                    console.log(`Message sent to ${anonymizedPhoneNumber} message type: "${messages[currentIndex].type}"`);
                     this.lastSentTimes.set(phoneNumber, Date.now());
                     this.backoffDelays.delete(phoneNumber); // Reset backoff on success
 
-                    if (message.type === 'image') {
+                    if (messages[currentIndex].type === 'image') {
                         try {
-                            const response = await axios.head(message.value)
+                            const response = await axios.head(messages[currentIndex].value)
                             if (response.headers['content-length']) {
                                 const imageSizeKB =
                                     parseInt(response.headers['content-length']) / 1024
@@ -53,7 +52,7 @@ class WhatsAppRateLimiter {
                             await new Promise((resolve) => setTimeout(resolve, 5000))
                         }
                     }
-                    console.log(`Message sent to ${anonymizedPhoneNumber} with message: ${message.value}`);
+                    console.log(`Message sent to ${anonymizedPhoneNumber} with message: ${messages[currentIndex].value}`);
                     currentIndex++;
                 } catch (error) {
                     if (error.response && error.response.status === 400) {
@@ -66,7 +65,7 @@ class WhatsAppRateLimiter {
 
                             const nextBackoff = this.calculateBackoffDelay(phoneNumber);
                             this.backoffDelays.set(phoneNumber, nextBackoff);
-                            console.log(`Retrying message at index ${currentIndex}: ${message.value}`);
+                            console.log(`Retrying message at index ${currentIndex}: ${messages[currentIndex].value}`);
                             await this.sleep(nextBackoff);
                             continue;
                         } else {
@@ -77,7 +76,7 @@ class WhatsAppRateLimiter {
                     }
                 }
             } else {
-                console.log(`Ignoring message with type: ${message.type}`);
+                console.log(`Ignoring message with type: ${messages[currentIndex].type}`);
                 currentIndex++;
             }
         }
@@ -137,31 +136,31 @@ class WhatsAppRateLimiter {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    createMessageData(message, from) {
+    createMessageData(messages, from, j) {
         let data;
         let ignore = false;
 
-        if (message.type === 'image') {
+        if (messages[j].type === 'image') {
             data = {
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
                 to: from,
                 type: 'image',
                 image: {
-                    link: message.value,
+                    link: messages[j].value,
                 },
             };
-        } else if (message.type === 'audio') {
+        } else if (messages[j].type === 'audio') {
             data = {
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
                 to: from,
                 type: 'audio',
                 audio: {
-                    link: message.value,
+                    link: messages[j].value,
                 },
             };
-        } else if (message.type === 'buttons') {
+        } else if (messages[j].type === 'buttons') {
             data = {
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
@@ -170,14 +169,14 @@ class WhatsAppRateLimiter {
                 interactive: {
                     type: 'button',
                     body: {
-                        text: message.previousValue || 'Make your choice',
+                        text: messages[j - 1]?.value || 'Make your choice',
                     },
                     action: {
-                        buttons: message.buttons,
+                        buttons: messages[j].buttons,
                     },
                 },
             };
-        } else if (message.type === 'text' || message.type === 'body') {
+        } else if (messages[j].type === 'text') {
             data = {
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
@@ -185,7 +184,7 @@ class WhatsAppRateLimiter {
                 type: 'text',
                 text: {
                     preview_url: true,
-                    body: message.value,
+                    body: messages[j].value,
                 },
             };
         } else {
