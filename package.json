@@ -9,6 +9,7 @@
   "author": "Voiceflow | NiKo",
   "license": "ISC",
   "dependencies": {
+    "@azure/monitor-opentelemetry": "^1.8.1",
     "@picovoice/leopard-node": "^1.2.0",
     "axios": "^1.7.9",
     "body-parser": "^1.20.2",

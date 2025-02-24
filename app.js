@@ -21,6 +21,11 @@ const PICOVOICE_API_KEY = process.env.PICOVOICE_API_KEY || null
 const WhatsAppRateLimiter = require('./WhatsAppRateLimiter'); // Import your class
 const rateLimiter = new WhatsAppRateLimiter(DEFAULT_DELAY); // Create an instance of your class
 
+//new Azure Monitor
+const APPLICATIONINSIGHTS_CONNECTION_STRING= process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || null;
+
+const { useAzureMonitor } = require("@azure/monitor-opentelemetry");
+useAzureMonitor();
 
 const {
   Leopard,
