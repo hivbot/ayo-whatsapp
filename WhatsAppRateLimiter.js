@@ -1,4 +1,7 @@
 const {default: axios} = require("axios");
+//new for telemetry monitoring
+const { trace, context } = require("@opentelemetry/api");
+const activeSpan = trace.getSpan(context.active());
 
 class WhatsAppRateLimiter {
     constructor(defaultDelay) {
@@ -51,6 +54,14 @@ class WhatsAppRateLimiter {
                             console.error('Failed to fetch image size:', error)
                             await new Promise((resolve) => setTimeout(resolve, 5000))
                         }
+                        // Send error to OpenTelemetry
+                        if (activeSpan) {
+                            activeSpan.addEvent("Image fetch error", {
+                                phoneNumber: anonymizedPhoneNumber,
+                                imageUrl: messages[currentIndex].value,
+                                errorMessage: error.message
+                            });
+                        }
                     }
                     console.log(`Message sent to ${anonymizedPhoneNumber} with message: ${messages[currentIndex].value}`);
                     currentIndex++;
@@ -63,6 +74,16 @@ class WhatsAppRateLimiter {
                             console.log(`Rate limit error for ${anonymizedPhoneNumber}: ${errorData.message}`);
                             console.log(`Details: ${errorData.error_data.details}`);
 
+                            // Send error to OpenTelemetry
+                            if (activeSpan) {
+                                activeSpan.addEvent("Rate limit error", {
+                                    phoneNumber: anonymizedPhoneNumber,
+                                    errorCode: errorData.code,
+                                    message: errorData.message,
+                                    details: errorData.error_data.details
+                                });
+                            }
+
                             const nextBackoff = this.calculateBackoffDelay(phoneNumber);
                             this.backoffDelays.set(phoneNumber, nextBackoff);
                             console.log(`Retrying message at index ${currentIndex}: ${messages[currentIndex].value}`);
@@ -71,8 +92,24 @@ class WhatsAppRateLimiter {
                         } else {
                             console.error(`Unhandled HTTP 400 error for ${anonymizedPhoneNumber}: ${errorData?.message || 'Unknown error'}`);
                         }
+                        // Log other 400 errors to OpenTelemetry
+                        if (activeSpan) {
+                            activeSpan.addEvent("Unhandled HTTP 400 error", {
+                                phoneNumber: anonymizedPhoneNumber,
+                                errorCode: errorData.code || "Unknown",
+                                message: errorData?.message || "Unknown error"
+                            });
+                        }
                     } else {
                         console.error(`Failed to send message to ${anonymizedPhoneNumber}: ${error.message}`);
+                    }
+                    // Log all other errors (e.g., network errors, 500s)
+                    if (activeSpan) {
+                        activeSpan.addEvent("Message send failure", {
+                            phoneNumber: anonymizedPhoneNumber,
+                            statusCode: error.response?.status || "Unknown",
+                            errorMessage: error.message
+                        });
                     }
                 }
             } else {
@@ -95,7 +132,18 @@ class WhatsAppRateLimiter {
               });
       return response.data;
     } catch (error) {
-      throw error;
+      console.error(`Error in WhatsApp API request: ${error.message}`);
+
+        // OpenTelemetry logging for errors
+        if (activeSpan) {
+            activeSpan.addEvent("WhatsApp API request failure", {
+                statusCode: error.response?.status || "Unknown",
+                phoneNumberID: phoneNumberID,
+                errorMessage: error.message,
+                errorData: JSON.stringify(error.response?.data || {}),
+            });
+        }
+        throw error;
     }
   }
 
