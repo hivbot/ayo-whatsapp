@@ -23,29 +23,11 @@ const rateLimiter = new WhatsAppRateLimiter(DEFAULT_DELAY); // Create an instanc
 
 //new Azure Monitor
 const APPLICATIONINSIGHTS_CONNECTION_STRING= process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || null;
-const { ConsoleSpanExporter } = require('@opentelemetry/exporter-console-span');
-const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
-const { SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
-const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
-const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
 const { useAzureMonitor } = require("@azure/monitor-opentelemetry");
 useAzureMonitor();
 // general http request
 const { diag, DiagConsoleLogger, DiagLogLevel } = require("@opentelemetry/api");
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
-const provider = new NodeTracerProvider();
-// Create and register the ConsoleSpanExporter directly with the provider
-const consoleExporter = new ConsoleSpanExporter();
-const simpleSpanProcessor = new SimpleSpanProcessor(consoleExporter);
-
-// Register the processor directly through provider.register()
-provider.register({
-  spanProcessor: simpleSpanProcessor,
-});
-// HTTP Instrumentation for Incoming Requests (Logs incoming HTTP errors)
-new HttpInstrumentation().enable();
-new ExpressInstrumentation().enable();
-
 
 const {
   Leopard,
