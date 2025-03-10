@@ -99,6 +99,7 @@ class WhatsAppRateLimiter {
                                 errorCode: errorData.code || "Unknown",
                                 message: errorData?.message || "Unknown error"
                             });
+                            throw error;
                         }
                     } else {
                         console.error(`Failed to send message to ${anonymizedPhoneNumber}: ${error.message}`);
@@ -110,6 +111,7 @@ class WhatsAppRateLimiter {
                             statusCode: error.response?.status || "Unknown",
                             errorMessage: error.message
                         });
+                        throw error;
                     }
                 }
             } else {

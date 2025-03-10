@@ -857,6 +857,13 @@ async function sendMessage(messages, phone_number_id, from) {
         await rateLimiter.sendMessageDelay(from, phone_number_id, messages);
       } catch (err) {
         console.error('Failed to send message:', err);
+        if (activeSpan) {
+          activeSpan.addEvent("Send Message Failure", {
+            phoneNumber: from,
+            errorMessage: err.message,
+            stackTrace: err.stack || "No stack trace available",
+          });
+        }
       }
     }
 
