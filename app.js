@@ -27,7 +27,18 @@ const { useAzureMonitor } = require("@azure/monitor-opentelemetry");
 useAzureMonitor();
 // general http request
 const { diag, DiagConsoleLogger, DiagLogLevel } = require("@opentelemetry/api");
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
+const logLevel = process.env.OTEL_LOG_LEVEL || "INFO";
+// Map environment variable to OpenTelemetry log levels
+const logLevelMap = {
+  NONE: DiagLogLevel.NONE,
+  ERROR: DiagLogLevel.ERROR,
+  WARN: DiagLogLevel.WARN,
+  INFO: DiagLogLevel.INFO,
+  DEBUG: DiagLogLevel.DEBUG,
+  VERBOSE: DiagLogLevel.VERBOSE,
+};
+// Set the logging level dynamically
+diag.setLogger(new DiagConsoleLogger(), logLevelMap[logLevel.toUpperCase()] || DiagLogLevel.INFO);
 
 const {
   Leopard,
@@ -249,7 +260,6 @@ app.post('/webhook', async (req, res) => {
       }
     }
     res.status(200).json({ message: 'ok' });
-    console.log('Status 200: Interact Message ok');
   } else {
     // Return a '404 Not Found' if event is not from a WhatsApp API
     res.status(400).json({ message: 'error | unexpected body' })
@@ -455,6 +465,9 @@ async function interact(user_id, request, phone_number_id, user_name) {
           }
         }
         tmpspeech += '\n'
+      }
+      if (tmpspeech.toLowerCase().includes("Sorry, I did not get")) {
+        console.log(`Sorry logging: ${tmpspeech} User ID: ${user_id || "Unknown"}`)
       }
       if (
         response.data[i + 1]?.type &&
