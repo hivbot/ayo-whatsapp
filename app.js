@@ -390,7 +390,7 @@ async function interact(user_id, request, phone_number_id, user_name) {
     console.log('isEnding')
     //console.log("user_id: " + user_id)
     isEnding = true
-    saveTranscript(user_name)
+    saveTranscript(user_id)
   } else {
     isEnding = false
   }
@@ -682,7 +682,7 @@ async function interact_text(user_id, request, phone_number_id, user_name) {
     console.log('isEnding')
     //console.log("user_id: " + user_id)
     isEnding = true
-    saveTranscript(user_name)
+    saveTranscript(user_id)
   } else {
     isEnding = false
   }
