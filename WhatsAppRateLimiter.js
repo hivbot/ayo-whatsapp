@@ -28,7 +28,7 @@ class WhatsAppRateLimiter {
             // Calculate wait time if within backoff delay
             const waitTime = Math.max(this.defaultDelay, backoffDelay) - (now - lastSentTime);
             if (waitTime > 0) {
-                console.log(`Waiting ${waitTime}ms before sending next message`);
+                //console.log(`Waiting ${waitTime}ms before sending next message`);
                 await this.sleep(waitTime);
             }
 
@@ -63,7 +63,7 @@ class WhatsAppRateLimiter {
                             });
                         }
                     }
-                    console.log(`Message sent to ${anonymizedPhoneNumber} with message: ${messages[currentIndex].value}`);
+                    //console.log(`Message sent to ${anonymizedPhoneNumber} with message: ${messages[currentIndex].value}`);
                     currentIndex++;
                 } catch (error) {
                     if (error.response && error.response.status === 400) {
