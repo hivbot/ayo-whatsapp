@@ -1,6 +1,6 @@
 'use strict'
 require('dotenv').config()
-const WHATSAPP_VERSION = process.env.WHATSAPP_VERSION || 'v17.0'
+const WHATSAPP_VERSION = process.env.WHATSAPP_VERSION || 'v20.0'
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID
 
