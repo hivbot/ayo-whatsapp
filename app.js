@@ -26,8 +26,8 @@ const APPLICATIONINSIGHTS_CONNECTION_STRING= process.env.APPLICATIONINSIGHTS_CON
 const { useAzureMonitor } = require("@azure/monitor-opentelemetry");
 useAzureMonitor();
 // general http request
-const { diag, DiagConsoleLogger, DiagLogLevel } = require("@opentelemetry/api");
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
+const { diag, DiagLogLevel } = require("@opentelemetry/api");
+diag.setLogger(undefined, DiagLogLevel.NONE);
 
 const {
   Leopard,
@@ -249,7 +249,6 @@ app.post('/webhook', async (req, res) => {
       }
     }
     res.status(200).json({ message: 'ok' });
-    console.log('Status 200: Interact Message ok');
   } else {
     // Return a '404 Not Found' if event is not from a WhatsApp API
     res.status(400).json({ message: 'error | unexpected body' })
@@ -389,9 +388,9 @@ async function interact(user_id, request, phone_number_id, user_name) {
   let isEnding = response.data.filter(({ type }) => type === 'end')
   if (isEnding.length > 0) {
     console.log('isEnding')
-    console.log("user_id: " + user_id)
+    //console.log("user_id: " + user_id)
     isEnding = true
-    saveTranscript(user_name)
+    saveTranscript(user_id)
   } else {
     isEnding = false
   }
@@ -455,6 +454,9 @@ async function interact(user_id, request, phone_number_id, user_name) {
           }
         }
         tmpspeech += '\n'
+      }
+      if (tmpspeech.toLowerCase().includes("sorry, i did not get")) {
+        console.log(`Sorry logging: ${tmpspeech} User ID: ${user_id || "Unknown"}`) //sorry logging
       }
       if (
         response.data[i + 1]?.type &&
@@ -657,7 +659,7 @@ async function interact_text(user_id, request, phone_number_id, user_name) {
         config: DMconfig,
       },
     });
-  console.log('response status nlu_protection/interact:', response.status);
+  //console.log('response status nlu_protection/interact:', response.status);
 
 // existing code from VF
 //   let response = await axios({
@@ -678,9 +680,9 @@ async function interact_text(user_id, request, phone_number_id, user_name) {
   let isEnding = response.data.filter(({ type }) => type === 'end')
   if (isEnding.length > 0) {
     console.log('isEnding')
-    console.log("user_id: " + user_id)
+    //console.log("user_id: " + user_id)
     isEnding = true
-    saveTranscript(user_name)
+    saveTranscript(user_id)
   } else {
     isEnding = false
   }
