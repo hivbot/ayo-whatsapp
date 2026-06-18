@@ -13,6 +13,14 @@ const AYO_TRACKER_URL = process.env.AYO_TRACKER_URL || null
 
 const DEFAULT_DELAY = process.env.DEFAULT_DELAY || null
 
+// Temporary maintenance mode: when MAINTENANCE_MODE === 'true', every inbound
+// message is answered with MAINTENANCE_MESSAGE and nothing is forwarded to
+// Voiceflow. Remove the env var (or set it to anything but 'true') to switch off.
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === 'true'
+const MAINTENANCE_MESSAGE =
+  process.env.MAINTENANCE_MESSAGE ||
+  'Ayo is currently unavailable. We are working on the problem.'
+
 const fs = require('fs')
 
 const PICOVOICE_API_KEY = process.env.PICOVOICE_API_KEY || null
@@ -93,6 +101,20 @@ app.post('/webhook', async (req, res) => {
       let user_name =
         req.body?.entry[0]?.changes[0]?.value?.contacts[0]?.profile?.name
       user_name = encrypt(user_name);
+
+      // Temporary maintenance short-circuit: reply with the downtime notice and
+      // skip all Voiceflow/NLU/tracker processing. Covers text, buttons,
+      // interactive replies, voice notes and /restart alike.
+      if (MAINTENANCE_MODE) {
+        console.log('Maintenance mode active — sending unavailable notice to', user_id)
+        await sendMessage(
+          [{ type: 'text', value: MAINTENANCE_MESSAGE }],
+          phone_number_id,
+          user_id
+        )
+        return res.status(200).json({ message: 'maintenance mode active' })
+      }
+
       if (req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text) {
         if(req.body?.entry[0]?.changes[0]?.value?.messages[0]?.text?.body?.startsWith("/restart")){
           deleteUserState(user_id);
